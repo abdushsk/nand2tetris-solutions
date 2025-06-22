@@ -32,5 +32,63 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
+
+    Not(in=instruction[15],out=aInstruction);
+    And(a=instruction[15], b=true,out=cInstruction);
+
+    Mux16(a=instruction, b=aluRet, sel=aDest, out=muxRet);
+
+    Or(a=aInstruction, b=aDest,out=updateA);
+    
+    ARegister(in=muxRet, load=updateA, out=aValue, out[0..14]=addressM);
+    DRegister(in=aluRet, load=dDest, out=dValue);
+    
+    Mux16(a=aValue, b=inM, sel=instruction[12], out=yValue);
+    ALU(x=dValue, y=yValue, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=outM,out=aluRet, zr=outZero, ng=outNeg);
+    // PC(in=, load=, inc=, reset=, out=);
+    DMux8Way(in=cInstruction, sel=instruction[3..5], a=nullD, b=mD, c=dD, d=mdD, e=aD, f=amD, g=adD, h=amdD);
+
+    Or(a=aD, b=amD, out=aTemp);
+    Or(a=aTemp, b=adD, out=aTemp2);
+    Or(a=aTemp2, b=amdD, out=aTemp3);
+    And(a=aTemp3, b=cInstruction, out=aDest);
+
+    Or(a=mD, b=amD, out=mTemp);
+    Or(a=mTemp, b=mdD, out=mTemp2);
+    Or(a=mTemp2, b=amdD, out=mTemp3);
+    And(a=mTemp3, b=cInstruction, out=mDest);
+
+    Or(a=dD, b=mdD, out=dTemp);
+    Or(a=dTemp, b=adD, out=dTemp2);
+    Or(a=dTemp2, b=amdD, out=dTemp3);
+    And(a=dTemp3, b=cInstruction, out=dDest);
+
+
+    // ARegister(in=aluRet, load=aDest, out=aValueOld);
+    // DRegister(in=aluRet, load=dDest, out=dValueOld);
+    And(a=true, b=mDest, out=writeM,out=returning);
+    // Mux16(a[0..15]=false, b=aValue, sel=returning, out[0..14]=addressM);
+
+
+    DMux8Way(in=cInstruction, sel=instruction[0..2], a=nullJ, b=jgt, c=jeq, d=jge, e=jlt, f=jne, g=jle, h=jmp);
+
+    Not(in=outNeg, out=outValuePositive);
+    Not(in=outZero,out=outValueNotZero);
+    And(a=outValuePositive,b=outValueNotZero, out=outGT);
+    Or(a=outZero,b=outNeg, out=outLTE);
+
+    And(a=jgt, b=outGT, out=jumpTemp1);
+    And(a=jeq, b=outZero, out=jumpTemp2);
+    And(a=jge, b=outValuePositive, out=jumpTemp3);
+    And(a=jlt, b=outNeg, out=jumpTemp4);
+    And(a=jne, b=outValueNotZero, out=jumpTemp5);
+    And(a=jle, b=outLTE, out=jumpTemp6);
+    And(a=jmp, b=true, out=jumpTemp7);
+
+    Or8Way(in[0]=false,in[1]=jumpTemp1,in[2]=jumpTemp2,in[3]=jumpTemp3,in[4]=jumpTemp4,in[5]=jumpTemp5,in[6]=jumpTemp6,in[7]=jumpTemp7, out=jumpNow);
+
+
+    PC(in=aValue, load=jumpNow, inc=true, reset=reset, out[0..14]=pc);
+    
 	//// Replace this comment with your code.
 }

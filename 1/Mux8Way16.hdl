@@ -20,5 +20,48 @@ CHIP Mux8Way16 {
     OUT out[16];
 
     PARTS:
-    //// Replace this comment with your code.
+    Not(in=sel[0],out=sel0N);
+    Not(in=sel[1],out=sel1N);
+    Not(in=sel[2],out=sel2N);
+
+    And(a=sel0N, b=sel1N, out=sel01N);
+    And(a=sel1N, b=sel2N, out=sel12N);
+    And(a=sel0N, b=sel2N, out=sel02N);
+
+    And(a=sel[1], b=sel[0], out=sel01);
+    And(a=sel[2], b=sel[0], out=sel02);
+    And(a=sel[2], b=sel[1], out=sel12);
+
+
+    And(a=sel01N, b=sel2N, out=aSelected);
+
+    And(a=sel12N, b=sel[0], out=bSelected);
+
+    And(a=sel02N, b=sel[1], out=cSelected);
+
+    And(a=sel01, b=sel2N, out=dSelected);
+
+    And(a=sel01N, b=sel[2], out=eSelected);
+
+    And(a=sel02, b=sel1N, out=fSelected);
+
+    And(a=sel12, b=sel0N, out=gSelected);
+
+    And(a=sel12, b=sel[0], out=hSelected);
+
+    Mux16(a=b, b=a, sel=aSelected, out=ans1);
+
+    Mux16(a=ans1, b=b, sel=bSelected, out=ans2);
+
+    Mux16(a=ans2, b=c, sel=cSelected, out=ans3);
+
+    Mux16(a=ans3, b=d, sel=dSelected, out=ans4);
+
+    Mux16(a=ans4, b=e, sel=eSelected, out=ans5);
+
+    Mux16(a=ans5, b=f, sel=fSelected, out=ans6);
+
+    Mux16(a=ans6, b=g, sel=gSelected, out=ans7);
+
+    Mux16(a=ans7, b=h, sel=hSelected, out=out);
 }
