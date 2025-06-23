@@ -3,7 +3,8 @@
 // by Nisan and Schocken, MIT Press.
 // File name: projects/5/Memory.hdl
 /**
- * The complete address space of the Hack computer's memory,
+ * Trajraj
+ 
  * including RAM and memory-mapped I/O. 
  * The chip facilitates read and write operations, as follows:
  *     Read:  out(t) = Memory[address(t)](t)
@@ -25,5 +26,16 @@ CHIP Memory {
     OUT out[16];
 
     PARTS:
-	//// Replace this comment with your code.
+
+    DMux4Way(in=load, sel=address[13..14], a=ram16kSelT1L, b=ram16kSelT2L, c=screenSelL, d=keySelL);
+    Or(a=ram16kSelT1L, b=ram16kSelT2L, out=ram16kSelL);
+
+
+    RAM16K(in=in, load=ram16kSelL, address=address[0..13], out=ram16kOut);
+
+    Screen(in=in, load=screenSelL, address=address[0..12], out=screenOut);
+
+    Keyboard(out=keyOut);
+
+    Mux4Way16(a=ram16kOut, b=ram16kOut, c=screenOut, d=keyOut, sel=address[13..14], out=out);
 }
