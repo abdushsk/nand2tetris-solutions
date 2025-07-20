@@ -1,0 +1,46 @@
+class Main {
+    function void main(){
+        var int i;
+        var String k;
+        var String d;
+        var int z;
+        var char r;
+        let d = "_";
+        let k = "Sup? Bro";
+        let i = 0;
+        do Output.moveCursor(21,25);
+        do Output.printString("N => NO, Y => YES");
+
+        do Output.moveCursor(10,27);
+        do Output.printChar(d.charAt(0));
+
+        while (i < k.length()){
+            do Output.backSpace();
+            do Output.printChar(k.charAt(i));
+            do Output.printChar(d.charAt(0));
+            let i = i + 1;
+            let z = 0;
+            while (z < 1){
+                let z = z+1;
+                do Output.backSpace();
+                do Sys.wait(100);
+                do Output.printChar(d.charAt(0));
+                do Sys.wait(100);
+            }
+        }
+
+        let i = 8;
+            do Sys.wait(400);
+        
+        while (i > 0) {
+            do Output.backSpace();
+            do Output.backSpace();
+            do Output.printChar(d.charAt(0));
+            do Sys.wait(50);
+            let i = i - 1;
+        }
+        do Output.printString("Can i Expect Full Score? ");
+        let r = Keyboard.readChar();
+        return;
+    }
+}
