@@ -1,0 +1,4 @@
+.PHONY: JackAnalyzer
+
+JackAnalyzer:
+	chmod +x JackAnalyzer

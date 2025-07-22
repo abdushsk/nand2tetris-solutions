@@ -65,7 +65,7 @@ func main() {
 		}
 
 		for _, v := range entries {
-			if filepath.Ext(v.Name()) != ".vm" {
+			if filepath.Ext(v.Name()) != ".jack" {
 				continue
 			}
 
@@ -142,6 +142,7 @@ func main() {
 		slp := strings.Split(filename, ".")
 		baseName := strings.Join(slp[:len(slp)-1], ".")
 		newFileName := baseName + "T_m.xml"
+		tokens = joinTokens(tokens)
 		os.WriteFile(newFileName, []byte(prettyPrintXML("<tokens>"+convertTokensToString(tokens)+"</tokens>")), 0755)
 
 		t := TokenAnnalyer{
@@ -150,8 +151,42 @@ func main() {
 		}
 		ret := t.run()
 		newFileName = baseName + "F_m.xml"
-		os.WriteFile(newFileName, []byte(prettyPrintXML(ret)), 0755)
+		// ret = strings.Replace(ret, "\n", "", -1)
+		os.WriteFile(newFileName, []byte(removeEmptyLines(prettyPrintXML((ret)))), 0755)
 	}
+}
+
+func removeEmptyLines(input string) string {
+	lines := strings.Split(input, "\n")
+	var nonEmpty []string
+	for _, line := range lines {
+		if strings.TrimSpace(line) != "" {
+			nonEmpty = append(nonEmpty, line)
+		}
+	}
+	return strings.Join(nonEmpty, "\n")
+}
+
+func joinTokens(tokens []*Token) []*Token {
+	newTokens := []*Token{}
+	storedTkn := Token{}
+	for _, v := range tokens {
+		if v.Kind == "integerConstant" {
+			storedTkn.Content = storedTkn.Content + v.Content
+		} else {
+			if storedTkn.Content != "" {
+				newTokens = append(newTokens, &Token{
+					Content: storedTkn.Content,
+					Kind:    "integerConstant",
+				})
+			}
+
+			storedTkn.Content = ""
+			newTokens = append(newTokens, v)
+		}
+	}
+
+	return newTokens
 }
 
 type TokenAnnalyer struct {
@@ -168,6 +203,7 @@ func (t *TokenAnnalyer) get() *Token {
 
 func (t *TokenAnnalyer) smartAdvance(content string, kind string) *Token {
 	tk := t.get()
+	fmt.Println(tk)
 	if content != "" && tk.Content != content {
 		return nil
 	}
@@ -220,7 +256,8 @@ func (t *TokenAnnalyer) parseSubroutineBody() []string {
 	}
 
 	tokens = append(tokens, t.parseStatements()...)
-	// tokens = append(tokens, t.smartAdvance("}", "symbol").String())
+	tokens = append(tokens, t.smartAdvance("}", "symbol").String())
+	fmt.Println("cl")
 	tokens = append(tokens, "</subroutineBody>")
 	return tokens
 }
@@ -239,12 +276,52 @@ func (t *TokenAnnalyer) parseStatements() []string {
 			tokens = append(tokens, t.parseVarDec()...)
 		} else if nxt.Content == "let" {
 			tokens = append(tokens, t.parseLetStatement()...)
+		} else if nxt.Content == "do" {
+			tokens = append(tokens, t.parseDoStatement()...)
+		} else if nxt.Content == "return" {
+			tokens = append(tokens, t.parseReturnStatement()...)
+		} else if nxt.Content == "if" {
+			tokens = append(tokens, t.parseIfStatement()...)
+		} else if nxt.Content == "while" {
+			tokens = append(tokens, t.parseWhileStatement()...)
 		} else {
+			fmt.Println(tokens)
+			panic("here " + nxt.Content)
 			break
 		}
 	}
 
 	tokens = append(tokens, "</statements>")
+	return tokens
+}
+
+func (t *TokenAnnalyer) parseDoStatement() []string {
+	tokens := []string{
+		"<doStatement>",
+	}
+	fmt.Println("yo?")
+	tokens = append(tokens, t.smartAdvance("", "keyword").String())
+	tokens = append(tokens, t.smartAdvance("", "").String())
+
+	tk2 := t.smartAdvance("", "")
+	tokens = append(tokens, tk2.String())
+
+	if tk2.Content == "." {
+		// var.sub-r call
+		fmt.Println("zo?")
+		tokens = append(tokens, t.smartAdvance("", "identifier").String())
+		tokens = append(tokens, t.smartAdvance("(", "").String())
+		tokens = append(tokens, t.parseExpressionList()...)
+		tokens = append(tokens, t.smartAdvance(")", "").String())
+	} else if tk2.Content == "(" {
+		tokens = append(tokens, t.parseExpressionList()...)
+		tokens = append(tokens, t.smartAdvance(")", "").String())
+	} else {
+		panic("yoo?")
+	}
+
+	tokens = append(tokens, t.smartAdvance("", "symbol").String())
+	tokens = append(tokens, "</doStatement>")
 	return tokens
 }
 
@@ -255,11 +332,80 @@ func (t *TokenAnnalyer) parseLetStatement() []string {
 
 	tokens = append(tokens, t.smartAdvance("", "keyword").String())
 	tokens = append(tokens, t.smartAdvance("", "identifier").String())
+
+	nxt := t.get()
+	if nxt.Content == "[" {
+		tokens = append(tokens, t.smartAdvance("[", "").String())
+		tokens = append(tokens, t.parseExpression()...)
+		tokens = append(tokens, t.smartAdvance("]", "").String())
+	}
+
 	tokens = append(tokens, t.smartAdvance("", "symbol").String())
-	tokens = append(tokens, t.smartAdvance("", "identifier").String())
-	tokens = append(tokens, t.smartAdvance("", "symbol").String())
+	tokens = append(tokens, t.parseExpression()...)
+	tokens = append(tokens, t.smartAdvance(";", "symbol").String())
 
 	tokens = append(tokens, "</letStatement>")
+	return tokens
+}
+
+func (t *TokenAnnalyer) parseIfStatement() []string {
+	tokens := []string{
+		"<ifStatement>",
+	}
+
+	tokens = append(tokens, t.smartAdvance("if", "keyword").String())
+	tokens = append(tokens, t.smartAdvance("(", "symbol").String())
+	tokens = append(tokens, t.parseExpression()...)
+	fmt.Println(tokens)
+	tokens = append(tokens, t.smartAdvance(")", "symbol").String())
+	tokens = append(tokens, t.smartAdvance("{", "symbol").String())
+	tokens = append(tokens, t.parseStatements()...)
+	tokens = append(tokens, t.smartAdvance("}", "symbol").String())
+
+	tk := t.get()
+	if tk.Content == "else" {
+		tokens = append(tokens, t.smartAdvance("else", "").String())
+		tokens = append(tokens, t.smartAdvance("{", "symbol").String())
+		tokens = append(tokens, t.parseStatements()...)
+		tokens = append(tokens, t.smartAdvance("}", "symbol").String())
+	}
+
+	tokens = append(tokens, "</ifStatement>")
+	return tokens
+}
+
+func (t *TokenAnnalyer) parseWhileStatement() []string {
+	tokens := []string{
+		"<whileStatement>",
+	}
+
+	tokens = append(tokens, t.smartAdvance("while", "keyword").String())
+	tokens = append(tokens, t.smartAdvance("(", "symbol").String())
+	tokens = append(tokens, t.parseExpression()...)
+	tokens = append(tokens, t.smartAdvance(")", "symbol").String())
+	tokens = append(tokens, t.smartAdvance("{", "symbol").String())
+	tokens = append(tokens, t.parseStatements()...)
+	tokens = append(tokens, t.smartAdvance("}", "symbol").String())
+
+	tokens = append(tokens, "</whileStatement>")
+	return tokens
+}
+
+func (t *TokenAnnalyer) parseReturnStatement() []string {
+	tokens := []string{
+		"<returnStatement>",
+	}
+
+	tokens = append(tokens, t.smartAdvance("", "keyword").String())
+
+	nxt := t.get()
+
+	if nxt.Content != ";" {
+		tokens = append(tokens, t.parseExpression()...)
+	}
+	tokens = append(tokens, t.smartAdvance(";", "").String())
+
+	tokens = append(tokens, "</returnStatement>")
 	return tokens
 }
 
@@ -267,8 +413,58 @@ func (t *TokenAnnalyer) parseExpression() []string {
 	tokens := []string{
 		"<expression>",
 	}
+	tokens = append(tokens, t.parseTerm()...)
+
+	next := t.get()
+
+	ops := []string{"+", "-", "*", "/", "&", "|", "<", ">", "="}
+
+	if funk.ContainsString(ops, next.Content) {
+		fmt.Println("yuhu")
+		tokens = append(tokens, t.smartAdvance("", "").String())
+		tokens = append(tokens, t.parseTerm()...)
+	}
 
 	tokens = append(tokens, "</expression>")
+	return tokens
+}
+
+func (t *TokenAnnalyer) parseTerm() []string {
+	tokens := []string{
+		"<term>",
+	}
+
+	tk1 := t.smartAdvance("", "")
+	tokens = append(tokens, tk1.String())
+
+	if tk1.Content == "-" || tk1.Content == "~" {
+		tokens = append(tokens, t.parseTerm()...)
+	} else if tk1.Content == "(" {
+		// expression
+		tokens = append(tokens, t.parseExpression()...)
+		tokens = append(tokens, t.smartAdvance(")", "").String())
+	} else {
+		tk2 := t.get()
+
+		if tk2.Content == "." {
+			// var.sub-r call
+			tokens = append(tokens, t.smartAdvance("", "").String())
+			tokens = append(tokens, t.smartAdvance("", "identifier").String())
+			tokens = append(tokens, t.smartAdvance("(", "").String())
+			tokens = append(tokens, t.parseExpressionList()...)
+			tokens = append(tokens, t.smartAdvance(")", "").String())
+		} else if tk2.Content == "[" {
+			// array
+			tokens = append(tokens, t.smartAdvance("[", "").String())
+			tokens = append(tokens, t.parseExpression()...)
+			tokens = append(tokens, t.smartAdvance("]", "").String())
+		} else if tk2.Content == "(" {
+			// sub-r call
+			panic("kemm2")
+		}
+	}
+
+	tokens = append(tokens, "</term>")
 	return tokens
 }
 
@@ -332,7 +528,28 @@ func (t *TokenAnnalyer) parseParameterList() []string {
 		}
 		tokens = append(tokens, tk.String())
 	}
-	tokens = append(tokens, "</parameterList>")
+	tokens = append(tokens, "\n</parameterList>")
+	return tokens
+}
+
+func (t *TokenAnnalyer) parseExpressionList() []string {
+	tokens := []string{
+		"<expressionList>",
+	}
+	for {
+		tk2 := t.get()
+		if tk2.Content == ")" {
+			break
+		}
+
+		tokens = append(tokens, t.parseExpression()...)
+		tk := t.smartAdvance(",", "")
+		if tk == nil {
+			break
+		}
+		tokens = append(tokens, tk.String())
+	}
+	tokens = append(tokens, "\n</expressionList>")
 	return tokens
 }
 
@@ -344,7 +561,6 @@ func (t *TokenAnnalyer) parseClassToken() []string {
 	tokens = append(tokens, t.smartAdvance("class", "").String())
 	tokens = append(tokens, t.smartAdvance("", "identifier").String())
 	tokens = append(tokens, t.smartAdvance("{", "").String())
-
 	for {
 		next := t.get()
 		if next.Content == "}" {
@@ -353,9 +569,11 @@ func (t *TokenAnnalyer) parseClassToken() []string {
 		}
 		if next.Content == "constructor" || next.Content == "function" || next.Content == "method" {
 			tokens = append(tokens, t.parseSubroutineDec()...)
-			break
 		} else if next.Content == "static" || next.Content == "field" {
 			tokens = append(tokens, t.parseClassVarDec()...)
+		} else {
+			fmt.Println("yos>")
+			break
 		}
 	}
 
@@ -443,6 +661,9 @@ func WrapString(wrapper string, content string) string {
 	if content == ">" {
 		content = "&gt;"
 	}
+	if content == "&" {
+		content = "&amp;"
+	}
 	return fmt.Sprintf("<%s> %s </%s>", wrapper, content, wrapper)
 }
 
@@ -455,6 +676,9 @@ func convertTokensToString(tokens []*Token) string {
 		}
 		if v.Content == ">" {
 			content = "&gt;"
+		}
+		if v.Content == "&" {
+			content = "&amp;"
 		}
 		str = append(str, fmt.Sprintf("<%s> %s </%s>", v.Kind, content, v.Kind))
 	}
