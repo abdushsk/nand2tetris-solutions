@@ -1,0 +1,3 @@
+function Display.writeCenter 0
+push constant 0
+return

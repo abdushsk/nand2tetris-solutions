@@ -1,0 +1,665 @@
+function World.new 0
+push constant 1
+call Memory.alloc 1
+pop pointer 0
+call Screen.clearScreen 0
+pop temp 0
+push pointer 0
+return
+function World.generateWorld 2
+push argument 0
+pop pointer 0
+push constant 8
+pop local 1
+label WHILE_EXP0
+push local 1
+push constant 10
+lt
+not
+if-goto WHILE_END0
+push constant 0
+pop local 0
+label WHILE_EXP1
+push local 0
+push constant 5
+lt
+not
+if-goto WHILE_END1
+push constant 32
+push constant 16
+call Math.multiply 2
+push local 1
+call Math.multiply 2
+push local 0
+add
+call World.draw 1
+pop temp 0
+push local 0
+push constant 1
+add
+pop local 0
+goto WHILE_EXP1
+label WHILE_END1
+push local 1
+push constant 1
+add
+pop local 1
+goto WHILE_EXP0
+label WHILE_END0
+push constant 32
+push constant 16
+call Math.multiply 2
+push constant 7
+call Math.multiply 2
+pop this 0
+push pointer 0
+push this 0
+call World.drawRightGuy 2
+pop temp 0
+push constant 0
+return
+function World.moveRight 0
+push argument 0
+pop pointer 0
+push this 0
+push constant 1
+add
+push constant 32
+push constant 16
+call Math.multiply 2
+push constant 7
+call Math.multiply 2
+push constant 32
+push constant 1
+sub
+add
+gt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+return
+label IF_FALSE0
+push pointer 0
+push this 0
+call World.clearRightGuy 2
+pop temp 0
+push pointer 0
+push this 0
+call World.clearLeftGuy 2
+pop temp 0
+push this 0
+push constant 1
+add
+pop this 0
+push pointer 0
+push this 0
+call World.drawRightGuy 2
+pop temp 0
+push constant 0
+return
+function World.moveLeft 0
+push argument 0
+pop pointer 0
+push this 0
+push constant 1
+sub
+push constant 32
+push constant 16
+call Math.multiply 2
+push constant 7
+call Math.multiply 2
+lt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+return
+label IF_FALSE0
+push pointer 0
+push this 0
+call World.clearRightGuy 2
+pop temp 0
+push pointer 0
+push this 0
+call World.clearLeftGuy 2
+pop temp 0
+push this 0
+push constant 1
+sub
+pop this 0
+push pointer 0
+push this 0
+call World.drawLeftGuy 2
+pop temp 0
+push constant 0
+return
+function World.drawRightGuy 1
+push argument 0
+pop pointer 0
+push constant 16384
+push argument 1
+add
+pop local 0
+push local 0
+push constant 8128
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 8224
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 9248
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 8224
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 14368
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 8228
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 8142
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 4191
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 4223
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 4191
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 4223
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 4191
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 4191
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 8159
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 4160
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 4160
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function World.drawLeftGuy 1
+push argument 0
+pop pointer 0
+push constant 16384
+push argument 1
+add
+pop local 0
+push local 0
+push constant 254
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 257
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 265
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 257
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 263
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 2305
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 7422
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 16002
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 16258
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 16002
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 16258
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 16002
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 16002
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 16126
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 130
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 130
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function World.clearLeftGuy 1
+push argument 0
+pop pointer 0
+push constant 16384
+push argument 1
+add
+pop local 0
+push local 0
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function World.clearRightGuy 1
+push argument 0
+pop pointer 0
+push constant 16384
+push argument 1
+add
+pop local 0
+push local 0
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function World.draw 1
+push constant 16384
+push argument 0
+add
+pop local 0
+push local 0
+push constant 1
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 16381
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 24571
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 28663
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 30703
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 31711
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 32191
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 32383
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 32383
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 32191
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 31711
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 30703
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 28663
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 24571
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 16381
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 1
+neg
+call Memory.poke 2
+pop temp 0
+push constant 0
+return

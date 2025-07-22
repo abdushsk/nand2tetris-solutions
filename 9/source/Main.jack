@@ -4,12 +4,14 @@ class Main {
         var String k;
         var String d;
         var int z;
+        var int key;
+        var World wr;
         var char r;
         let d = "_";
         let k = "Sup? Bro";
         let i = 0;
-        do Output.moveCursor(21,25);
-        do Output.printString("N => NO, Y => YES");
+        do Output.moveCursor(21,21);
+        do Output.printString("Use Arrow Keys to MOVE");
 
         do Output.moveCursor(10,27);
         do Output.printChar(d.charAt(0));
@@ -39,8 +41,21 @@ class Main {
             do Sys.wait(50);
             let i = i - 1;
         }
-        do Output.printString("Can i Expect Full Score? ");
-        let r = Keyboard.readChar();
+
+        let wr = World.new();
+        do wr.generateWorld();
+
+        
+        while (true){
+            if (key = 100 | key = 132){
+                do wr.moveRight();
+            }
+            if (key = 97 | key = 130){
+                do wr.moveLeft();
+            }
+            do Sys.wait(100);
+            let key = Keyboard.keyPressed();              
+        }
         return;
     }
 }
