@@ -208,8 +208,24 @@ type SymbolInfo struct {
 	Name  string
 }
 
+func (si *SymbolInfo) Kindy() string {
+	if si.Kind == "field" {
+		return "this"
+	}
+	return si.Kind
+}
+
 type SymbolTable struct {
 	Infos []*SymbolInfo
+}
+
+func (st *SymbolTable) Get(name string) *SymbolInfo {
+	for _, v := range st.Infos {
+		if v.Name == name {
+			return v
+		}
+	}
+	return nil
 }
 
 func (st *SymbolTable) GetInfo(name string) *SymbolInfo {
@@ -257,10 +273,23 @@ type TokenAnnalyer struct {
 	subSymbolTable   SymbolTable
 	ctxt             *GlobalContext
 	baseName         string
+	nextLabelId      int
 }
 
-func (t *TokenAnnalyer) GetContext() {
+func (t *TokenAnnalyer) GetLabel() string {
+	t.nextLabelId++
+	return fmt.Sprintf("L_%d", t.nextLabelId)
+}
 
+func (t *TokenAnnalyer) getSymbol(name string) *SymbolInfo {
+	name = strings.TrimPrefix(name, "this.")
+	if t.subSymbolTable.Get(name) != nil {
+		return t.subSymbolTable.Get(name)
+	}
+	if t.classSymbolTable.Get(name) != nil {
+		return t.classSymbolTable.Get(name)
+	}
+	return t.ctxt.globalSymbolTable.Get(name)
 }
 
 func (t *TokenAnnalyer) get() *Token {
@@ -287,7 +316,7 @@ func (t *TokenAnnalyer) smartAdvance(content string, kind string) *Token {
 func (t *TokenAnnalyer) run() string {
 	tk := t.get()
 	if tk.Content == "class" {
-		return strings.Join(t.parseClassToken(), "")
+		return strings.Join(t.parseClassToken(), "\n")
 	} else {
 		panic("yo")
 	}
@@ -302,7 +331,7 @@ func (t *TokenAnnalyer) parseSubroutineDec() []string {
 
 	t.smartAdvance("(", "symbol")
 
-	if subKind != "function" {
+	if subKind == "method" {
 		t.subSymbolTable.Infos = append(t.subSymbolTable.Infos, &SymbolInfo{
 			Index: 0,
 			Kind:  "argument",
@@ -318,6 +347,16 @@ func (t *TokenAnnalyer) parseSubroutineDec() []string {
 
 	tokens := []string{}
 	tokens = append(tokens, fmt.Sprintf("function %s.%s %d", t.className, t.subRoutineName, t.subSymbolTable.Count("local")))
+
+	if subKind == "constructor" {
+		classFieldCount := t.classSymbolTable.Count("field")
+		tokens = append(tokens, []string{
+			fmt.Sprintf("push constant %d", classFieldCount),
+			"call Memory.alloc 1",
+			"pop pointer 0",
+		}...)
+	}
+
 	tokens = append(tokens, ret...)
 
 	return tokens
@@ -372,6 +411,52 @@ func (t *TokenAnnalyer) parseStatements() []string {
 	return tokens
 }
 
+func (t *TokenAnnalyer) getParamsCount() int {
+	counter := map[string]int{
+		"(": 1,
+	}
+
+	toTrack := []string{"(", "[", ")", "]"}
+
+	commaFounds := 0
+	i := t.currIndex
+	for ; i < len(t.tokens); i++ {
+
+		if funk.ContainsString(toTrack, t.tokens[i].Content) {
+			if t.tokens[i].Content == ")" || t.tokens[i].Content == "]" {
+				if t.tokens[i].Content == ")" {
+					counter["("]--
+				} else {
+					counter["]"]--
+				}
+			} else {
+				counter[t.tokens[i].Content]++
+			}
+		}
+
+		nonZero := 0
+		for _, v := range counter {
+			if v > 0 {
+				nonZero++
+			}
+		}
+
+		if nonZero == 1 && t.tokens[i].Content == "," {
+			commaFounds++
+		}
+
+		if nonZero == 0 {
+			break
+		}
+	}
+
+	if i == t.currIndex {
+		return 0
+	}
+
+	return commaFounds + 1
+}
+
 func (t *TokenAnnalyer) parseDoStatement() []string {
 	tokens := []string{}
 	fmt.Println("yo?")
@@ -385,34 +470,66 @@ func (t *TokenAnnalyer) parseDoStatement() []string {
 		t.smartAdvance("(", "")
 	}
 
-	tokens = append(tokens, t.parseExpressionList()...)
-	tokens = append(tokens, t.smartAdvance(")", "").String())
+	cnt := t.getParamsCount()
 
-	tokens = append(tokens, t.smartAdvance("", "symbol").String())
-	tokens = append(tokens, "</doStatement>")
+	if strings.Contains(name, ".") {
+		symbolExists := t.getSymbol(strings.Split(name, ".")[0])
+		if symbolExists != nil {
+			tokens = append(tokens, []string{
+				fmt.Sprintf("push %s %d", symbolExists.Kind, symbolExists.Index),
+			}...)
+			cnt++
+			name = fmt.Sprintf("%s.%s", symbolExists.Type, strings.Split(name, ".")[1])
+		}
+	}
+
+	tokens = append(tokens, t.parseExpressionList()...)
+
+	tokens = append(tokens, fmt.Sprintf("call %s %d", name, cnt))
+	tokens = append(tokens, "pop temp 0")
+
+	t.smartAdvance(")", "")
+
+	t.smartAdvance("", "symbol")
 	return tokens
 }
 
 func (t *TokenAnnalyer) parseLetStatement() []string {
-	tokens := []string{
-		"<letStatement>",
-	}
+	tokens := []string{}
 
-	tokens = append(tokens, t.smartAdvance("", "keyword").String())
-	tokens = append(tokens, t.smartAdvance("", "identifier").String())
-
+	t.smartAdvance("let", "keyword")
+	variableNode := t.smartAdvance("", "identifier")
+	foundSymbol := t.getSymbol(variableNode.Content)
+	arrayMode := false
 	nxt := t.get()
 	if nxt.Content == "[" {
-		tokens = append(tokens, t.smartAdvance("[", "").String())
+		arrayMode = true
+		tokens = append(tokens, []string{
+			fmt.Sprintf("push %s %d", foundSymbol.Kind, foundSymbol.Index),
+		}...)
+
+		t.smartAdvance("[", "")
 		tokens = append(tokens, t.parseExpression()...)
-		tokens = append(tokens, t.smartAdvance("]", "").String())
+		t.smartAdvance("]", "")
+
+		tokens = append(tokens, "add")
 	}
 
-	tokens = append(tokens, t.smartAdvance("", "symbol").String())
+	t.smartAdvance("=", "symbol")
 	tokens = append(tokens, t.parseExpression()...)
-	tokens = append(tokens, t.smartAdvance(";", "symbol").String())
+	t.smartAdvance(";", "symbol")
 
-	tokens = append(tokens, "</letStatement>")
+	if !arrayMode {
+		tokens = append(tokens, fmt.Sprintf("pop %s %d", foundSymbol.Kindy(), foundSymbol.Index))
+	} else {
+		tokens = append(tokens, []string{
+			"pop temp 0",
+			"pop pointer 1",
+			"push temp 0",
+			"pop that 0",
+		}...)
+	}
+
 	return tokens
 }
 
@@ -443,44 +560,72 @@ func (t *TokenAnnalyer) parseIfStatement() []string {
 }
 
 func (t *TokenAnnalyer) parseWhileStatement() []string {
+
+	topmostLabel := t.GetLabel()
+	breakingLabel := t.GetLabel()
 	tokens := []string{
-		"<whileStatement>",
+		"label " + topmostLabel,
 	}
 
-	tokens = append(tokens, t.smartAdvance("while", "keyword").String())
-	tokens = append(tokens, t.smartAdvance("(", "symbol").String())
+	t.smartAdvance("while", "keyword")
+	t.smartAdvance("(", "symbol")
 	tokens = append(tokens, t.parseExpression()...)
-	tokens = append(tokens, t.smartAdvance(")", "symbol").String())
-	tokens = append(tokens, t.smartAdvance("{", "symbol").String())
-	tokens = append(tokens, t.parseStatements()...)
-	tokens = append(tokens, t.smartAdvance("}", "symbol").String())
+	tokens = append(tokens, []string{
+		"not",
+		"if-goto " + breakingLabel,
+	}...)
 
-	tokens = append(tokens, "</whileStatement>")
+	t.smartAdvance(")", "symbol")
+	t.smartAdvance("{", "symbol")
+
+	tokens = append(tokens, t.parseStatements()...)
+	tokens = append(tokens, []string{
+		"goto " + topmostLabel,
+		"label " + breakingLabel,
+	}...)
+
+	t.smartAdvance("}", "symbol")
+
 	return tokens
 }
 
 func (t *TokenAnnalyer) parseReturnStatement() []string {
-	tokens := []string{
-		"<returnStatement>",
-	}
+	tokens := []string{}
 
-	tokens = append(tokens, t.smartAdvance("", "keyword").String())
+	t.smartAdvance("return", "keyword")
 
 	nxt := t.get()
 
 	if nxt.Content != ";" {
 		tokens = append(tokens, t.parseExpression()...)
 	}
-	tokens = append(tokens, t.smartAdvance(";", "").String())
+	t.smartAdvance(";", "")
 
-	tokens = append(tokens, "</returnStatement>")
+	tokens = append(tokens, "return")
 	return tokens
 }
 
-func (t *TokenAnnalyer) parseExpression() []string {
-	tokens := []string{
-		"<expression>",
+func convertOpToSomething(op string) string {
+	switch op {
+	case "*":
+		return "call Math.multiply 2"
+	case "/":
+		return "call Math.divide 2"
+	case "+":
+		return "add"
+	case "-":
+		return "sub"
+	case "<":
+		return "lt"
+	case ">":
+		return "gt"
+	default:
+		return op
 	}
+}
+
+func (t *TokenAnnalyer) parseExpression() []string {
+	tokens := []string{}
 	tokens = append(tokens, t.parseTerm()...)
 
 	next := t.get()
@@ -489,50 +634,82 @@ func (t *TokenAnnalyer) parseExpression() []string {
 
 	if funk.ContainsString(ops, next.Content) {
 		fmt.Println("yuhu")
-		tokens = append(tokens, t.smartAdvance("", "").String())
+		opNode := t.smartAdvance("", "")
 		tokens = append(tokens, t.parseTerm()...)
+		tokens = append(tokens, convertOpToSomething(opNode.Content))
 	}
 
-	tokens = append(tokens, "</expression>")
 	return tokens
 }
 
 func (t *TokenAnnalyer) parseTerm() []string {
-	tokens := []string{
-		"<term>",
-	}
+	tokens := []string{}
 
 	tk1 := t.smartAdvance("", "")
-	tokens = append(tokens, tk1.String())
 
-	if tk1.Content == "-" || tk1.Content == "~" {
+	if tk1.Kind == "identifier" && t.getSymbol(tk1.Content) != nil {
+		sym := t.getSymbol(tk1.Content)
+		tokens = append(tokens, fmt.Sprintf("push %s %d", sym.Kind, sym.Index))
+	}
+	if tk1.Kind == "stringConstant" {
+		stringLen := len(tk1.Content)
+		tokens = append(tokens, []string{
+			fmt.Sprintf("push constant %d", stringLen),
+			"call String.new 1",
+		}...)
+
+		for _, v := range tk1.Content {
+			tokens = append(tokens, []string{
+				fmt.Sprintf("push constant %d", int(v)),
+				"call String.appendChar 2",
+			}...)
+		}
+
+	} else if tk1.Kind == "integerConstant" {
+		tokens = append(tokens, fmt.Sprintf("push constant %s", tk1.Content))
+	} else if tk1.Content == "-" || tk1.Content == "~" {
 		tokens = append(tokens, t.parseTerm()...)
+		btOp := "not"
+		if tk1.Content == "-" {
+			btOp = "neg"
+		}
+		tokens = append(tokens, btOp)
 	} else if tk1.Content == "(" {
 		// expression
 		tokens = append(tokens, t.parseExpression()...)
-		tokens = append(tokens, t.smartAdvance(")", "").String())
+		t.smartAdvance(")", "")
 	} else {
 		tk2 := t.get()
 
 		if tk2.Content == "." {
 			// var.sub-r call
-			tokens = append(tokens, t.smartAdvance("", "").String())
-			tokens = append(tokens, t.smartAdvance("", "identifier").String())
-			tokens = append(tokens, t.smartAdvance("(", "").String())
+			t.smartAdvance(".", "")
+			name2Node := t.smartAdvance("", "identifier")
+			t.smartAdvance("(", "")
+			count := t.getParamsCount()
 			tokens = append(tokens, t.parseExpressionList()...)
-			tokens = append(tokens, t.smartAdvance(")", "").String())
+			tokens = append(tokens, fmt.Sprintf("call %s.%s %d", tk1.Content, name2Node.Content, count))
+			t.smartAdvance(")", "")
 		} else if tk2.Content == "[" {
 			// array
-			tokens = append(tokens, t.smartAdvance("[", "").String())
+			symbolData := t.getSymbol(tk1.Content)
+
+			t.smartAdvance("[", "")
+			tokens = append(tokens, []string{
+				fmt.Sprintf("push %s %d", symbolData.Kind, symbolData.Index),
+			}...)
 			tokens = append(tokens, t.parseExpression()...)
-			tokens = append(tokens, t.smartAdvance("]", "").String())
+			tokens = append(tokens, "add")
+			tokens = append(tokens, "push pointer 1")
+			tokens = append(tokens, "pop that 0")
+
+			t.smartAdvance("]", "")
 		} else if tk2.Content == "(" {
 			// sub-r call
 			panic("kemm2")
 		}
 	}
 
-	tokens = append(tokens, "</term>")
 	return tokens
 }
 
@@ -573,6 +750,9 @@ func (t *TokenAnnalyer) parseClassVarDec() []string {
 
 		if kindNode.Content == "static" {
 			idx = t.ctxt.globalSymbolTable.GetInfo(t.className + "." + nameNode.Content).Index
+			if idx == 0 {
+				panic("zupzup")
+			}
 		} else {
 			idx = t.classSymbolTable.getNextInt(kindNode.Content)
 		}
@@ -767,9 +947,28 @@ func convertTokensToString(tokens []*Token) string {
 
 type GlobalContext struct {
 	globalSymbolTable SymbolTable
-	allMethods        []string
-	allConstructors   []string
-	allFunctions      []string
+	subroutines       []*SubroutineInfo
+}
+
+type SubroutineInfo struct {
+	routineType string
+	argsCount   int
+	name        string
+}
+
+func (gc *GlobalContext) getRoutineInfo(name string, classname string) *SubroutineInfo {
+	if !strings.Contains(name, ".") {
+		name = classname + "." + name
+	}
+
+	for _, v := range gc.subroutines {
+		if v.name == name {
+			return v
+		}
+	}
+
+	panic("yo?")
+	return nil
 }
 
 func (gc *GlobalContext) storeContext(tokens []*Token) {
@@ -789,15 +988,27 @@ func (gc *GlobalContext) storeContext(tokens []*Token) {
 			i++
 			i++
 			name := className + "." + tokens[i].Content
-			if tk == "function" {
-				gc.allFunctions = append(gc.allFunctions, name)
+			i++
+			count := 1
+			for ; i < len(tokens); i++ {
+				if tokens[i].Content == ")" {
+					break
+				}
+				if tokens[i].Content == "," {
+					count++
+				}
 			}
-			if tk == "constructor" {
-				gc.allConstructors = append(gc.allConstructors, name)
-			}
+
 			if tk == "method" {
-				gc.allMethods = append(gc.allMethods, name)
+				count++
 			}
+
+			gc.subroutines = append(gc.subroutines, &SubroutineInfo{
+				routineType: tk,
+				argsCount:   count,
+				name:        name,
+			})
+
 			continue
 		}
 
