@@ -534,28 +534,44 @@ func (t *TokenAnnalyer) parseLetStatement() []string {
 }
 
 func (t *TokenAnnalyer) parseIfStatement() []string {
-	tokens := []string{
-		"<ifStatement>",
-	}
+	tokens := []string{}
 
-	tokens = append(tokens, t.smartAdvance("if", "keyword").String())
-	tokens = append(tokens, t.smartAdvance("(", "symbol").String())
+	elseLabel := t.GetLabel()
+	doneLabel := t.GetLabel()
+
+	t.smartAdvance("if", "keyword")
+	t.smartAdvance("(", "symbol")
 	tokens = append(tokens, t.parseExpression()...)
-	fmt.Println(tokens)
-	tokens = append(tokens, t.smartAdvance(")", "symbol").String())
-	tokens = append(tokens, t.smartAdvance("{", "symbol").String())
+
+	tokens = append(tokens, []string{
+		"not",
+		"if-goto " + elseLabel,
+	}...)
+
+	t.smartAdvance(")", "symbol")
+	t.smartAdvance("{", "symbol")
+
 	tokens = append(tokens, t.parseStatements()...)
-	tokens = append(tokens, t.smartAdvance("}", "symbol").String())
+
+	t.smartAdvance("}", "symbol")
+
+	tokens = append(tokens, []string{
+		"goto " + doneLabel,
+		"label " + elseLabel,
+	}...)
 
 	tk := t.get()
 	if tk.Content == "else" {
-		tokens = append(tokens, t.smartAdvance("else", "").String())
-		tokens = append(tokens, t.smartAdvance("{", "symbol").String())
+		t.smartAdvance("else", "")
+		t.smartAdvance("{", "symbol")
 		tokens = append(tokens, t.parseStatements()...)
-		tokens = append(tokens, t.smartAdvance("}", "symbol").String())
+		t.smartAdvance("}", "symbol")
 	}
 
-	tokens = append(tokens, "</ifStatement>")
+	tokens = append(tokens, []string{
+		"label " + doneLabel,
+	}...)
+
 	return tokens
 }
 
@@ -613,12 +629,16 @@ func convertOpToSomething(op string) string {
 		return "call Math.divide 2"
 	case "+":
 		return "add"
+	case "=":
+		return "eq"
 	case "-":
 		return "sub"
 	case "<":
 		return "lt"
 	case ">":
 		return "gt"
+	case "&":
+		return "and"
 	default:
 		return op
 	}
@@ -650,6 +670,16 @@ func (t *TokenAnnalyer) parseTerm() []string {
 	if tk1.Kind == "identifier" && t.getSymbol(tk1.Content) != nil {
 		sym := t.getSymbol(tk1.Content)
 		tokens = append(tokens, fmt.Sprintf("push %s %d", sym.Kind, sym.Index))
+	}
+	if tk1.Content == "null" {
+		tokens = append(tokens, "push constant 0")
+	}
+	if tk1.Content == "true" {
+		tokens = append(tokens, "push constant 1")
+		tokens = append(tokens, "neg")
+	}
+	if tk1.Content == "false" {
+		tokens = append(tokens, "push constant 0")
 	}
 	if tk1.Kind == "stringConstant" {
 		stringLen := len(tk1.Content)
@@ -692,16 +722,13 @@ func (t *TokenAnnalyer) parseTerm() []string {
 			t.smartAdvance(")", "")
 		} else if tk2.Content == "[" {
 			// array
-			symbolData := t.getSymbol(tk1.Content)
 
 			t.smartAdvance("[", "")
-			tokens = append(tokens, []string{
-				fmt.Sprintf("push %s %d", symbolData.Kind, symbolData.Index),
-			}...)
+
 			tokens = append(tokens, t.parseExpression()...)
 			tokens = append(tokens, "add")
-			tokens = append(tokens, "push pointer 1")
-			tokens = append(tokens, "pop that 0")
+			tokens = append(tokens, "pop pointer 1")
+			tokens = append(tokens, "push that 0")
 
 			t.smartAdvance("]", "")
 		} else if tk2.Content == "(" {
