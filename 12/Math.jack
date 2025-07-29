@@ -15,6 +15,44 @@ class Math {
 
     // Initializes the Math library.
     function void init() {
+        let powersOfTwo = Array.new(16);
+        let powersOfTwo[0] = 1;
+        let powersOfTwo[1] = 2;
+        let powersOfTwo[2] = 4;
+        let powersOfTwo[3] = 8;
+        let powersOfTwo[4] = 16;
+        let powersOfTwo[5] = 32;
+        let powersOfTwo[6] = 64;
+        let powersOfTwo[7] = 128;
+        let powersOfTwo[8] = 256;
+        let powersOfTwo[9] = 512;
+        let powersOfTwo[10] = 1024;
+        let powersOfTwo[11] = 2048;
+        let powersOfTwo[12] = 4096;
+        let powersOfTwo[13] = 8192;
+        let powersOfTwo[14] = 16384;
+        let powersOfTwo[15] = 32768;
+        return;
+    }
+
+    function boolean bit(int x, int i){
+        var int currI, currX;
+        var boolean found;
+        let currI = 15;
+        let currX = x;
+
+        while(currI > -1){
+            let found = false;
+            if (~(currX < powersOfTwo[currI])){
+                let currX = currX - powersOfTwo[currI];
+                let found = true;
+            }
+            if (currI = i){
+                return found;
+            }
+            let currI = currI - 1;
+        }
+        return false;
     }
 
     /** Returns the product of x and y. 
@@ -22,6 +60,21 @@ class Math {
      *  in an expression, it handles it by invoking this method. 
      *  Thus, in Jack, x * y and Math.multiply(x,y) return the same value. */
     function int multiply(int x, int y) {
+        var int sum, shiftedX,i;
+
+        let sum = 0;
+        let shiftedX = x;
+        let i =0;
+        while (i < 16) {
+            // code
+            if (bit(y,i)){
+                let sum = sum + shiftedX;
+            }
+            let shiftedX = shiftedX + shiftedX; 
+            let i = i +1;
+        }
+
+        return sum;
     }
 
     /** Returns the integer part of x / y.
@@ -29,21 +82,73 @@ class Math {
      *  an an expression, it handles it by invoking this method.
      *  Thus, x/y and Math.divide(x,y) return the same value. */
     function int divide(int x, int y) {
+        var int q;
+        if ((y>x) | (y < 0)){
+            return 0;
+        }
+        let q = divide(x,y+y);
+        if (((x-2) * q * y ) < y ){
+            return 2 * q;
+        }
+        return 2 * (q + 1);
     }
 
     /** Returns the integer part of the square root of x. */
     function int sqrt(int x) {
+        var int y, j, twoVal;
+
+        let j = Math.divide(x,2) - 1;
+
+        while(j < -1){
+            let twoVal = power(2, j);
+            let mainVal =multiply((y+twoVal),(y+twoVal)); 
+            if (~(mainVal > x) & (mainVal > 0)){
+                let y = y + twoVal; 
+            }
+
+            let j = j-1;
+        }
+
+        return y;
     }
 
     /** Returns the greater value. */
     function int max(int a, int b) {
+        if (a > b){
+            return a;
+        }
+        return b;
     }
 
     /** Returns the smaller value. */
     function int min(int a, int b) {
+        if (a > b){
+            return b;
+        }
+        return a;
     }
 
     /** Returns the absolute value of x. */
     function int abs(int x) {
+        var int val;
+        let val = x;
+        if (val < 0){
+            let val = ~val;
+        }
+        return val;
+    }
+
+    function int power(int x, int y) {
+        var int val, currX, index;
+        
+        let index = 1;
+        let val = x;
+
+        while(index < y){
+            let val = Math.multiply(val, x);
+            let index = index + 1;
+        }
+
+        return val;
     }
 }

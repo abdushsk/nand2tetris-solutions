@@ -1,0 +1,15 @@
+class Game{
+    field int x1, y1;
+
+    constructor Game new(int x, int y){
+        var int z;
+        let x1 = x;
+        let y1 = y;
+        return this;
+    }
+
+    method void print(){
+        do Output.printString("sup?");
+        return;
+    }
+}

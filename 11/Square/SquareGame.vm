@@ -1,0 +1,174 @@
+function SquareGame.new 0
+push constant 2
+call Memory.alloc 1
+pop pointer 0
+push constant 0
+push constant 0
+push constant 30
+call Square.new 3
+pop this 0
+push constant 0
+pop this 1
+return
+function SquareGame.dispose 0
+push field 0
+call Square.dispose 1
+pop temp 0
+call Memory.deAlloc 1
+pop temp 0
+return
+function SquareGame.moveSquare 0
+push field 1
+push constant 1
+eq
+not
+if-goto L_1
+push field 0
+call Square.moveUp 1
+pop temp 0
+goto L_2
+label L_1
+label L_2
+push field 1
+push constant 2
+eq
+not
+if-goto L_3
+push field 0
+call Square.moveDown 1
+pop temp 0
+goto L_4
+label L_3
+label L_4
+push field 1
+push constant 3
+eq
+not
+if-goto L_5
+push field 0
+call Square.moveLeft 1
+pop temp 0
+goto L_6
+label L_5
+label L_6
+push field 1
+push constant 4
+eq
+not
+if-goto L_7
+push field 0
+call Square.moveRight 1
+pop temp 0
+goto L_8
+label L_7
+label L_8
+push constant 5
+call Sys.wait 1
+pop temp 0
+return
+function SquareGame.run 2
+pop local 1
+label L_9
+push local 1
+not
+not
+if-goto L_10
+label L_11
+push local 0
+push constant 0
+eq
+not
+if-goto L_12
+call Keyboard.keyPressed 0
+pop local 0
+call moveSquare 0
+pop temp 0
+goto L_11
+label L_12
+push local 0
+push constant 81
+eq
+not
+if-goto L_13
+pop local 1
+goto L_14
+label L_13
+label L_14
+push local 0
+push constant 90
+eq
+not
+if-goto L_15
+push field 0
+call Square.decSize 1
+pop temp 0
+goto L_16
+label L_15
+label L_16
+push local 0
+push constant 88
+eq
+not
+if-goto L_17
+push field 0
+call Square.incSize 1
+pop temp 0
+goto L_18
+label L_17
+label L_18
+push local 0
+push constant 131
+eq
+not
+if-goto L_19
+push constant 1
+pop this 1
+goto L_20
+label L_19
+label L_20
+push local 0
+push constant 133
+eq
+not
+if-goto L_21
+push constant 2
+pop this 1
+goto L_22
+label L_21
+label L_22
+push local 0
+push constant 130
+eq
+not
+if-goto L_23
+push constant 3
+pop this 1
+goto L_24
+label L_23
+label L_24
+push local 0
+push constant 132
+eq
+not
+if-goto L_25
+push constant 4
+pop this 1
+goto L_26
+label L_25
+label L_26
+label L_27
+push local 0
+push constant 0
+eq
+not
+not
+if-goto L_28
+call Keyboard.keyPressed 0
+pop local 0
+call moveSquare 0
+pop temp 0
+goto L_27
+label L_28
+goto L_9
+label L_10
+return

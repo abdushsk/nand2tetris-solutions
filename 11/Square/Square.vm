@@ -1,0 +1,261 @@
+function Square.new 0
+push constant 3
+call Memory.alloc 1
+pop pointer 0
+push argument 0
+pop this 0
+push argument 1
+pop this 1
+push argument 2
+pop this 2
+call draw 0
+pop temp 0
+return
+function Square.dispose 0
+call Memory.deAlloc 1
+pop temp 0
+return
+function Square.draw 0
+call Screen.setColor 1
+pop temp 0
+push field 0
+push field 1
+push field 0
+push field 2
+add
+push field 1
+push field 2
+add
+call Screen.drawRectangle 4
+pop temp 0
+return
+function Square.erase 0
+call Screen.setColor 1
+pop temp 0
+push field 0
+push field 1
+push field 0
+push field 2
+add
+push field 1
+push field 2
+add
+call Screen.drawRectangle 4
+pop temp 0
+return
+function Square.incSize 0
+push field 1
+push field 2
+add
+push constant 254
+lt
+push field 0
+push field 2
+add
+push constant 510
+lt
+&
+not
+if-goto L_1
+call erase 0
+pop temp 0
+push field 2
+push constant 2
+add
+pop this 2
+call draw 0
+pop temp 0
+goto L_2
+label L_1
+label L_2
+return
+function Square.decSize 0
+push field 2
+push constant 2
+gt
+not
+if-goto L_3
+call erase 0
+pop temp 0
+push field 2
+push constant 2
+sub
+pop this 2
+call draw 0
+pop temp 0
+goto L_4
+label L_3
+label L_4
+return
+function Square.moveUp 0
+push field 1
+push constant 1
+gt
+not
+if-goto L_5
+call Screen.setColor 1
+pop temp 0
+push field 0
+push field 1
+push field 2
+add
+push constant 1
+sub
+push field 0
+push field 2
+add
+push field 1
+push field 2
+add
+call Screen.drawRectangle 4
+pop temp 0
+push field 1
+push constant 2
+sub
+pop this 1
+call Screen.setColor 1
+pop temp 0
+push field 0
+push field 1
+push field 0
+push field 2
+add
+push field 1
+push constant 1
+add
+call Screen.drawRectangle 4
+pop temp 0
+goto L_6
+label L_5
+label L_6
+return
+function Square.moveDown 0
+push field 1
+push field 2
+add
+push constant 254
+lt
+not
+if-goto L_7
+call Screen.setColor 1
+pop temp 0
+push field 0
+push field 1
+push field 0
+push field 2
+add
+push field 1
+push constant 1
+add
+call Screen.drawRectangle 4
+pop temp 0
+push field 1
+push constant 2
+add
+pop this 1
+call Screen.setColor 1
+pop temp 0
+push field 0
+push field 1
+push field 2
+add
+push constant 1
+sub
+push field 0
+push field 2
+add
+push field 1
+push field 2
+add
+call Screen.drawRectangle 4
+pop temp 0
+goto L_8
+label L_7
+label L_8
+return
+function Square.moveLeft 0
+push field 0
+push constant 1
+gt
+not
+if-goto L_9
+call Screen.setColor 1
+pop temp 0
+push field 0
+push field 2
+add
+push constant 1
+sub
+push field 1
+push field 0
+push field 2
+add
+push field 1
+push field 2
+add
+call Screen.drawRectangle 4
+pop temp 0
+push field 0
+push constant 2
+sub
+pop this 0
+call Screen.setColor 1
+pop temp 0
+push field 0
+push field 1
+push field 0
+push constant 1
+add
+push field 1
+push field 2
+add
+call Screen.drawRectangle 4
+pop temp 0
+goto L_10
+label L_9
+label L_10
+return
+function Square.moveRight 0
+push field 0
+push field 2
+add
+push constant 510
+lt
+not
+if-goto L_11
+call Screen.setColor 1
+pop temp 0
+push field 0
+push field 1
+push field 0
+push constant 1
+add
+push field 1
+push field 2
+add
+call Screen.drawRectangle 4
+pop temp 0
+push field 0
+push constant 2
+add
+pop this 0
+call Screen.setColor 1
+pop temp 0
+push field 0
+push field 2
+add
+push constant 1
+sub
+push field 1
+push field 0
+push field 2
+add
+push field 1
+push field 2
+add
+call Screen.drawRectangle 4
+pop temp 0
+goto L_12
+label L_11
+label L_12
+return

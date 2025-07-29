@@ -639,6 +639,8 @@ func convertOpToSomething(op string) string {
 		return "gt"
 	case "&":
 		return "and"
+	case "|":
+		return "or"
 	default:
 		return op
 	}
@@ -648,15 +650,19 @@ func (t *TokenAnnalyer) parseExpression() []string {
 	tokens := []string{}
 	tokens = append(tokens, t.parseTerm()...)
 
-	next := t.get()
-
 	ops := []string{"+", "-", "*", "/", "&", "|", "<", ">", "="}
 
-	if funk.ContainsString(ops, next.Content) {
-		fmt.Println("yuhu")
-		opNode := t.smartAdvance("", "")
-		tokens = append(tokens, t.parseTerm()...)
-		tokens = append(tokens, convertOpToSomething(opNode.Content))
+	for {
+		next := t.get()
+
+		if funk.ContainsString(ops, next.Content) {
+			fmt.Println("yuhu")
+			opNode := t.smartAdvance("", "")
+			tokens = append(tokens, t.parseTerm()...)
+			tokens = append(tokens, convertOpToSomething(opNode.Content))
+		} else {
+			break
+		}
 	}
 
 	return tokens
@@ -778,7 +784,7 @@ func (t *TokenAnnalyer) parseClassVarDec() []string {
 		if kindNode.Content == "static" {
 			idx = t.ctxt.globalSymbolTable.GetInfo(t.className + "." + nameNode.Content).Index
 			if idx == 0 {
-				panic("zupzup")
+				// panic("zupzup")
 			}
 		} else {
 			idx = t.classSymbolTable.getNextInt(kindNode.Content)

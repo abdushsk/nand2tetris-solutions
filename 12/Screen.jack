@@ -8,7 +8,7 @@
  * of 256 pixels each (indexed 0..255, left to right). The top left pixel on 
  * the screen is indexed (0,0).
  */
-class Screen {
+class Screen {  
 
     /** Initializes the Screen. */
     function void init() {

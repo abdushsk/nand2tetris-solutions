@@ -1,0 +1,23 @@
+function Main.main 2
+push constant 10
+pop local 0
+push local 0
+call Main.camera 1
+call Output.printInt 1
+pop temp 0
+push constant 1
+push constant 2
+call Game.new 2
+pop local 1
+push local 1
+call Game.print 1
+pop temp 0
+return
+function Main.camera 0
+push argument 0
+push constant 10
+add
+return
+function Main.teno 0
+push constant 1
+return

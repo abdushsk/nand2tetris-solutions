@@ -9,8 +9,22 @@
 class Main {
 
    function void main() {
-      do Output.printInt(1 + (2 * 3));
+      var int z;
+      var Game g;
+      let z = 10;
+      do Output.printInt(Main.camera(z));
+
+      let g = Game.new(1,2);
+      do g.print();
       return;
+   }
+
+   function int camera(int a){
+      return a+10;
+   }
+
+   method int teno(){
+      return 1;
    }
 
 }
