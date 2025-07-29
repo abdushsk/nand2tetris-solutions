@@ -498,8 +498,16 @@ func (t *TokenAnnalyer) parseLetStatement() []string {
 	tokens := []string{}
 
 	t.smartAdvance("let", "keyword")
-	variableNode := t.smartAdvance("", "identifier")
-	foundSymbol := t.getSymbol(variableNode.Content)
+	variableName := t.smartAdvance("", "identifier").Content
+
+	nxt1 := t.get()
+	if nxt1.Content == "." {
+		t.smartAdvance(".", "")
+		var newName = t.smartAdvance("", "").Content
+		variableName = variableName + "." + newName
+	}
+
+	foundSymbol := t.getSymbol(variableName)
 	arrayMode := false
 	nxt := t.get()
 	if nxt.Content == "[" {
@@ -721,11 +729,33 @@ func (t *TokenAnnalyer) parseTerm() []string {
 			// var.sub-r call
 			t.smartAdvance(".", "")
 			name2Node := t.smartAdvance("", "identifier")
-			t.smartAdvance("(", "")
-			count := t.getParamsCount()
-			tokens = append(tokens, t.parseExpressionList()...)
-			tokens = append(tokens, fmt.Sprintf("call %s.%s %d", tk1.Content, name2Node.Content, count))
-			t.smartAdvance(")", "")
+			if t.get().Content == "(" {
+				t.smartAdvance("(", "")
+				count := t.getParamsCount()
+				tokens = append(tokens, t.parseExpressionList()...)
+				sym := t.getSymbol(tk1.Content)
+				name := tk1.Content + "." + name2Node.Content
+				if sym != nil {
+					sym := t.getSymbol(tk1.Content)
+					name = sym.Type + "." + name2Node.Content
+					count++
+				}
+				tokens = append(tokens, fmt.Sprintf("call %s %d", name, count))
+				t.smartAdvance(")", "")
+			} else {
+				sym := t.getSymbol(tk1.Content + "." + name2Node.Content)
+				tokens = append(tokens, fmt.Sprintf("push %s %d", sym.Kind, sym.Index))
+
+				t.smartAdvance("[", "")
+
+				tokens = append(tokens, t.parseExpression()...)
+				tokens = append(tokens, "add")
+				tokens = append(tokens, "pop pointer 1")
+				tokens = append(tokens, "push that 0")
+
+				t.smartAdvance("]", "")
+			}
+
 		} else if tk2.Content == "[" {
 			// array
 
