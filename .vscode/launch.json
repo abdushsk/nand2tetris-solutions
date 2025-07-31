@@ -13,7 +13,7 @@
             "program": "${workspaceFolder}/10/code",
             "cwd": "${workspaceFolder}/10/code",
             "args": [
-                "../../12/Memory.jack",
+                "../../12/ScreenTest",
             ],
         }
     ]

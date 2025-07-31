@@ -31,7 +31,7 @@ class Math {
         let powersOfTwo[12] = 4096;
         let powersOfTwo[13] = 8192;
         let powersOfTwo[14] = 16384;
-        let powersOfTwo[15] = 32768;
+        let powersOfTwo[15] = 0;
         return;
     }
 
@@ -43,9 +43,17 @@ class Math {
 
         while(currI > -1){
             let found = false;
-            if (~(currX < powersOfTwo[currI])){
-                let currX = currX - powersOfTwo[currI];
-                let found = true;
+            if (currI = 15 ){
+                if (x < 0){
+                    let found = true;
+                    let currX = currX + powersOfTwo[14];
+                    let currX = currX + powersOfTwo[14];
+                }
+            }else {
+                if (~(currX < powersOfTwo[currI])){
+                    let currX = currX - powersOfTwo[currI];
+                    let found = true;
+                }
             }
             if (currI = i){
                 return found;
@@ -67,11 +75,11 @@ class Math {
         let i =0;
         while (i < 16) {
             // code
-            if (bit(y,i)){
+            if (Math.bit(y,i)){
                 let sum = sum + shiftedX;
             }
             let shiftedX = shiftedX + shiftedX; 
-            let i = i +1;
+            let i = i + 1;
         }
 
         return sum;
@@ -81,27 +89,38 @@ class Math {
      *  When a Jack compiler detects the division operator '/'
      *  an an expression, it handles it by invoking this method.
      *  Thus, x/y and Math.divide(x,y) return the same value. */
-    function int divide(int x, int y) {
-        var int q;
-        if ((y>x) | (y < 0)){
+    function int divide(int x1, int y1) {
+        var int x,y;
+        var int q,negate;
+        
+
+        let x = Math.abs(x1);
+        let y = Math.abs(y1);
+        let negate = 1;
+
+        if ((x1 > 0 & y1 < 0) | (x1 < 0 & y1  > 0)){
+            let negate = -1; 
+        }
+
+        if ((y > x) | (y1 < 0)){
             return 0;
         }
-        let q = divide(x,y+y);
-        if (((x-2) * q * y ) < y ){
-            return 2 * q;
+        let q = Math.divide(x,y+y);
+        if ((x-((2 * q) * y) ) < y ){
+            return  (q + q) * negate;
         }
-        return 2 * (q + 1);
+        return ((2 * q) + 1)*negate;
     }
 
     /** Returns the integer part of the square root of x. */
     function int sqrt(int x) {
-        var int y, j, twoVal;
+        var int y, j, twoVal, mainVal;
 
-        let j = Math.divide(x,2) - 1;
+        let j = Math.divide(16,2) - 1;
 
-        while(j < -1){
-            let twoVal = power(2, j);
-            let mainVal =multiply((y+twoVal),(y+twoVal)); 
+        while(j > -1){
+            let twoVal = Math.power(2, j);
+            let mainVal = Math.multiply((y+twoVal),(y+twoVal)); 
             if (~(mainVal > x) & (mainVal > 0)){
                 let y = y + twoVal; 
             }
@@ -133,7 +152,7 @@ class Math {
         var int val;
         let val = x;
         if (val < 0){
-            let val = ~val;
+            let val = ~val + 1;
         }
         return val;
     }
@@ -141,8 +160,8 @@ class Math {
     function int power(int x, int y) {
         var int val, currX, index;
         
-        let index = 1;
-        let val = x;
+        let index = 0;
+        let val = 1;
 
         while(index < y){
             let val = Math.multiply(val, x);

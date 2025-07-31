@@ -147,7 +147,7 @@ func main() {
 		baseName := strings.Join(slp[:len(slp)-1], ".")
 		newFileName := baseName + "T.xml"
 		tokens = joinTokens(tokens)
-		os.WriteFile(newFileName, []byte(prettyPrintXML("<tokens>"+convertTokensToString(tokens)+"</tokens>")), 0755)
+		os.WriteFile(newFileName, []byte(("<tokens>" + convertTokensToString(tokens) + "</tokens>")), 0755)
 
 		t := TokenAnnalyer{
 			tokens:    tokens,
@@ -476,7 +476,7 @@ func (t *TokenAnnalyer) parseDoStatement() []string {
 		symbolExists := t.getSymbol(strings.Split(name, ".")[0])
 		if symbolExists != nil {
 			tokens = append(tokens, []string{
-				fmt.Sprintf("push %s %d", symbolExists.Kind, symbolExists.Index),
+				fmt.Sprintf("push %s %d", symbolExists.Kindy(), symbolExists.Index),
 			}...)
 			cnt++
 			name = fmt.Sprintf("%s.%s", symbolExists.Type, strings.Split(name, ".")[1])
@@ -513,7 +513,7 @@ func (t *TokenAnnalyer) parseLetStatement() []string {
 	if nxt.Content == "[" {
 		arrayMode = true
 		tokens = append(tokens, []string{
-			fmt.Sprintf("push %s %d", foundSymbol.Kind, foundSymbol.Index),
+			fmt.Sprintf("push %s %d", foundSymbol.Kindy(), foundSymbol.Index),
 		}...)
 
 		t.smartAdvance("[", "")
@@ -681,9 +681,9 @@ func (t *TokenAnnalyer) parseTerm() []string {
 
 	tk1 := t.smartAdvance("", "")
 
-	if tk1.Kind == "identifier" && t.getSymbol(tk1.Content) != nil {
+	if (tk1.Kind == "identifier" || tk1.Content == "this") && t.getSymbol(tk1.Content) != nil {
 		sym := t.getSymbol(tk1.Content)
-		tokens = append(tokens, fmt.Sprintf("push %s %d", sym.Kind, sym.Index))
+		tokens = append(tokens, fmt.Sprintf("push %s %d", sym.Kindy(), sym.Index))
 	}
 	if tk1.Content == "null" {
 		tokens = append(tokens, "push constant 0")
@@ -729,7 +729,8 @@ func (t *TokenAnnalyer) parseTerm() []string {
 			// var.sub-r call
 			t.smartAdvance(".", "")
 			name2Node := t.smartAdvance("", "identifier")
-			if t.get().Content == "(" {
+			wap := t.get()
+			if wap.Content == "(" {
 				t.smartAdvance("(", "")
 				count := t.getParamsCount()
 				tokens = append(tokens, t.parseExpressionList()...)
@@ -742,9 +743,9 @@ func (t *TokenAnnalyer) parseTerm() []string {
 				}
 				tokens = append(tokens, fmt.Sprintf("call %s %d", name, count))
 				t.smartAdvance(")", "")
-			} else {
+			} else if wap.Content == "[" {
 				sym := t.getSymbol(tk1.Content + "." + name2Node.Content)
-				tokens = append(tokens, fmt.Sprintf("push %s %d", sym.Kind, sym.Index))
+				tokens = append(tokens, fmt.Sprintf("push %s %d", sym.Kindy(), sym.Index))
 
 				t.smartAdvance("[", "")
 
@@ -754,6 +755,9 @@ func (t *TokenAnnalyer) parseTerm() []string {
 				tokens = append(tokens, "push that 0")
 
 				t.smartAdvance("]", "")
+			} else {
+				sym := t.getSymbol(tk1.Content + "." + name2Node.Content)
+				tokens = append(tokens, fmt.Sprintf("push %s %d", sym.Kindy(), sym.Index))
 			}
 
 		} else if tk2.Content == "[" {
@@ -986,6 +990,12 @@ func WrapString(wrapper string, content string) string {
 	if content == "&" {
 		content = "&amp;"
 	}
+	if content == "\"" {
+		content = "&quot;"
+	}
+	if content == "'" {
+		content = "&apos;"
+	}
 	return fmt.Sprintf("<%s> %s </%s>", wrapper, content, wrapper)
 }
 
@@ -1005,7 +1015,7 @@ func convertTokensToString(tokens []*Token) string {
 		str = append(str, fmt.Sprintf("<%s> %s </%s>", v.Kind, content, v.Kind))
 	}
 
-	return strings.Join(str, "")
+	return strings.Join(str, "\n")
 }
 
 type GlobalContext struct {

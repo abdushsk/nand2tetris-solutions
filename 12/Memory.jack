@@ -2,59 +2,83 @@
 // and the book "The Elements of Computing Systems"
 // by Nisan and Schocken, MIT Press.
 // File name: projects/12/Memory.jack
+
 /**
- * This library provides two services: direct access to the computer's main
- * memory (RAM), and allocation and recycling of memory blocks. The Hack RAM
- * consists of 32,768 words, each holding a 16-bit binary number.
+ * Memory operations library.
  */ 
 class Memory {
-    static Array ram;
-    static Array heap;
-    static int freeList;
-    /** Initializes the class. */
+	static Array memory;
+	static int base, max;
+	static int length;
+	static int nextNode;
+	static int endOfList;
+	
+    /** Initializes memory parameters. */
     function void init() {
-        let ram = 0;
-        let heap = 2048;
-        let freeList = 2048;
-        let heap[0] = 0;
-        let heap[1] = 14335;
+		//each allocation of memory starts with 2 fields:
+		//first field for the size of the current alloc, named "size"
+		//and the second for pointer to the next alloc, named "nextNode"
+		let memory = 0;
+		let base = 2048;
+		let max = 16384;
+		let length = base;
+		let nextNode = base + 1;
+		let endOfList = -1;
+		let memory[length] = max - base;
+		let memory[nextNode] = endOfList;
+		return;
     }
 
-    /** Returns the RAM value at the given address. */
+    /** Returns the value of the main memory at the given address. */
     function int peek(int address) {
-        return ram[address];
+		return memory[address];
     }
 
-    /** Sets the RAM value at the given address to the given value. */
+    /** Sets the value of the main memory at this address
+     *  to the given value. */
     function void poke(int address, int value) {
-        let ram[address] = value;
-        return;
+		let memory[address] = value;
+		return;
     }
 
-    /** Finds an available RAM block of the given size and returns
-     *  a reference to its base address. */
+    /** finds and allocates from the heap a memory block of the 
+     *  specified size and returns a reference to its base address. */
     function int alloc(int size) {
-        var int foundAddr,segSize, nxt;
-        let nxt = freeList;
-
-        while (foundAddr = 0){
-            let segSize = ram[nxt+1];
-            if (~(segSize < (size+2))){
-                let foundAddr = nxt + 1 + segSize - (size+1);
-                let ram[nxt + 1] = segSize - (size + 2); 
-            }else{
-                let nxt = ram[nxt];
-            }
-        }
-        let ram[foundAddr+1] = size;
-        return foundAddr+2;
+		var int currNode;
+		var int prevNode;
+		var int next;
+		var int returnAddress;
+		
+		let prevNode = length;
+		let currNode = length;
+		let next = nextNode; 
+		let returnAddress = -1;
+		
+		while (~(memory[currNode] > size) & ~(memory[next] = endOfList)) {
+			let prevNode = currNode;
+			let currNode = memory[next];
+			let next = memory[next + 1];
+		}
+		if (~(next = endOfList)) { //found free block in the middle of the list
+			if (currNode < (size + 3)) {
+				let memory[prevNode + 1] = memory[currNode + 1];
+				let memory[currNode] = size + 1;
+				let returnAddress = currNode + 1;
+			}
+			else {
+				let memory[currNode] = memory[currNode] - size - 1;
+				let returnAddress = currNode + memory[currNode];
+				let memory[returnAddress - 1] = size + 1;
+			}
+		}
+		return returnAddress;
     }
 
-    /** De-allocates the given object (cast as an array) by making
-     *  it available for future allocations. */
-    function void deAlloc(Array o) {
-        let ram[o - 2] = freeList;
-        let freeList = o - 2;
-        return;
+    /** De-allocates the given object and frees its space. */
+    function void deAlloc(int object) {
+		let memory[object] = memory[object - 1];
+    	let memory[object + 1] = memory[length + 1];
+    	let memory[length + 1] = object;
+    	return;
     }    
 }
